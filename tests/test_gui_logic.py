@@ -16,6 +16,7 @@ class FakeVar:
     def __init__(self, value=""): self._v = value
     def get(self): return self._v
     def set(self, v): self._v = v
+    def trace_add(self, *a, **k): pass
 
 
 class W:
@@ -72,6 +73,11 @@ def test_gui_flow(gui):
     app.vars["Q"].set("12.5"); app.calculate()
     assert app.res is before
     app.vars["Q"].set("12"); app.vars["Ro"].set("55"); app.calculate()
+    # live drawing, valid and invalid input
+    app.redraw_motor(); app.vars['Q'].set('abc'); app.redraw_motor(); app.vars['Q'].set('12')
+    app.vars['Ri'].set('70'); app.redraw_motor(); app.vars['Ri'].set('27.5')
+    fd.asksaveasfilename = MagicMock(return_value=str(tmp / 'd.png')); app.save_drawing()
+    assert (tmp / 'd.png').exists()
     # every graph can be shown
     for i in range(14):
         app.listbox.selection_set(i); app.show_plot()

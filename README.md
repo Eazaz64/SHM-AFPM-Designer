@@ -42,6 +42,10 @@ with two numeric columns, x then y (a header row is allowed).
 
 1. Create a new repository on GitHub and upload all files of this folder (keep the folder
    structure, including `.github/workflows/build-windows.yml`).
+   **If the `.github` folder did not upload** (folders starting with a dot are hidden and are
+   skipped by the GitHub drag-and-drop upload): on the repository page press *Add file > Create new
+   file*, type `.github/workflows/build-windows.yml` as the file name (typing the slashes creates the
+   folders), paste the contents of `build-windows.yml.txt` from this project, and press *Commit*.
 2. Open the **Actions** tab. The workflow *Build Windows app* runs by itself on every push
    (or press *Run workflow*). It runs the tests, builds the .exe with PyInstaller, and starts the
    built .exe once with `--selftest` to check that the window opens and every graph exports.

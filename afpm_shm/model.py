@@ -146,8 +146,9 @@ def validate(P):
         if w >= ts:
             err.append("Tooth width at %s (%.1f mm) is not smaller than the slot pitch (%.1f mm)."
                        % (lab, w * 1e3, ts * 1e3))
-        elif abs(ts - w - P.b0) > 0.5e-3:
-            warn.append("Slot opening b0 differs from (slot pitch - tooth width) at %s by more than 0.5 mm." % lab)
+        elif P.b0 > ts - w + 0.5e-3:
+            warn.append("Slot opening b0 (%.1f mm) is wider than the slot (slot pitch - tooth width = %.1f mm) at %s."
+                        % (P.b0 * 1e3, (ts - w) * 1e3, lab))
     if P.Nph * 1.0 <= 0: err.append("Turns per phase must be positive.")
     return err, warn
 

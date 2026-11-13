@@ -41,3 +41,15 @@ def test_read_xy_csv(tmp_path):
         PL.read_xy_csv(str(f2)); assert False
     except ValueError:
         pass
+
+
+def test_motor_drawing_variants(tmp_path):
+    from matplotlib.figure import Figure
+    from afpm_shm import drawing as DR
+    for topo in ("SSSR", "SSDR"):
+        f = Figure(); DR.draw_motor(f, M.default_params(topo))
+        assert len(f.axes) == 2
+        f.savefig(str(tmp_path / (topo + ".png")))
+    P = M.default_params("SSSR"); P.Q = 9; P.p = 4; P.wto = 14e-3; P.wti = 5e-3; P.b0 = 5e-3
+    f = Figure(); DR.draw_motor(f, P); assert len(f.axes) == 2
+    f = Figure(); DR.draw_motor(f, None, message="x"); assert len(f.axes) == 0

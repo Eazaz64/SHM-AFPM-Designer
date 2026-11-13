@@ -20,6 +20,8 @@ def selftest(outdir=None):
     root.update_idletasks()
     root.update()
     assert app.res is not None and len(app.specs) == 14
+    app.redraw_motor(); root.update()
+    assert len(app.dfig.axes) == 2, "motor drawing failed"
     root.destroy()
     with open(os.path.join(outdir, "selftest_ok.txt"), "w") as fh:
         fh.write("ok\n")

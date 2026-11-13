@@ -11,6 +11,7 @@ from matplotlib.figure import Figure
 from . import __version__
 from . import model as M
 from . import plots as PL
+from . import drawing as DR
 
 # (group, key, label, unit, factor [display = SI value / factor], integer?)
 FIELDS = [
@@ -98,12 +99,15 @@ class App:
         self.specs = []
         self.overlays = {}
         self.fig = Figure(figsize=(6.5, 4.5), dpi=100)
+        self.dfig = Figure(figsize=(4.2, 7.0), dpi=100)
+        self._draw_job = None
         self._build_menu()
         self._build_toolbar()
         self._build_body()
         ttk.Label(root, textvariable=self.status, relief="sunken", anchor="w").pack(side="bottom", fill="x")
         root.bind("<F5>", lambda e: self.calculate())
         self.load_into_form(M.default_params("SSSR"))
+        self.redraw_motor()
         self.calculate()
 
     # ------------------------------------------------------------------ layout
@@ -144,8 +148,14 @@ class App:
         pw.pack(side="top", fill="both", expand=True)
         left = ttk.Frame(pw)
         right = ttk.Frame(pw)
+        drawf = ttk.LabelFrame(pw, text="Motor drawing (updates while you type)", padding=2)
         pw.add(left, weight=0)
         pw.add(right, weight=1)
+        pw.add(drawf, weight=0)
+        self.dcanvas = FigureCanvasTkAgg(self.dfig, master=drawf)
+        self.dcanvas.get_tk_widget().configure(width=400)
+        ttk.Button(drawf, text="Save drawing...", command=self.save_drawing).pack(side="bottom", pady=2)
+        self.dcanvas.get_tk_widget().pack(side="top", fill="both", expand=True)
         # scrollable input form
         canvas = tk.Canvas(left, width=340, highlightthickness=0)
         sb = ttk.Scrollbar(left, orient="vertical", command=canvas.yview)
@@ -167,6 +177,10 @@ class App:
             ttk.Label(frame, text=label).grid(row=row, column=0, sticky="w", pady=1)
             v = tk.StringVar()
             self.vars[key] = v
+            try:
+                v.trace_add("write", lambda *a: self.schedule_drawing())
+            except Exception:
+                pass
             e = ttk.Entry(frame, textvariable=v, width=11, justify="right")
             e.grid(row=row, column=1, padx=4)
             e.bind("<Return>", lambda ev: self.calculate())
@@ -232,6 +246,41 @@ class App:
             else:
                 d[key] = val * factor
         return M.params_from_dict(d)
+
+    def schedule_drawing(self):
+        """Redraw the motor shortly after the last key press (no full calculation needed)."""
+        if self._draw_job is not None:
+            try:
+                self.root.after_cancel(self._draw_job)
+            except Exception:
+                pass
+        try:
+            self._draw_job = self.root.after(250, self.redraw_motor)
+        except Exception:
+            self.redraw_motor()
+
+    def redraw_motor(self):
+        self._draw_job = None
+        try:
+            P = self.read_form()
+            err, warn = M.validate(P)
+            if err:
+                DR.draw_motor(self.dfig, P, message="Cannot draw yet:\n" + "\n".join(err))
+            else:
+                DR.draw_motor(self.dfig, P)
+        except ValueError as exc:
+            DR.draw_motor(self.dfig, None, message="Cannot draw yet:\n%s" % exc)
+        except Exception as exc:
+            DR.draw_motor(self.dfig, None, message="Drawing failed: %s" % exc)
+        self.dcanvas.draw_idle()
+
+    def save_drawing(self):
+        path = filedialog.asksaveasfilename(
+            defaultextension=".png", initialfile="motor_drawing",
+            filetypes=[("PNG image", "*.png"), ("SVG vector", "*.svg"), ("PDF", "*.pdf")])
+        if path:
+            self.dfig.savefig(path, dpi=300)
+            self.status.set("Saved " + path)
 
     def on_topology(self):
         base = M.default_params(self.topology.get())

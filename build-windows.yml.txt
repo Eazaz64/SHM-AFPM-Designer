@@ -1,0 +1,57 @@
+name: Build Windows app
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write        # needed to attach the .exe to a release when you push a tag
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt pytest pyinstaller
+
+      - name: Run the tests (SHM maths is compared with the MATLAB results)
+        run: python -m pytest -q tests
+
+      - name: Build AFPM-SHM-Designer.exe
+        run: >
+          pyinstaller --noconfirm --clean --onefile --windowed
+          --name AFPM-SHM-Designer
+          --exclude-module scipy --exclude-module pandas --exclude-module IPython
+          --exclude-module PyQt5 --exclude-module PyQt6 --exclude-module PySide2 --exclude-module PySide6
+          --exclude-module wx --exclude-module gi
+          run_app.py
+
+      - name: Self-test the built exe (opens the window once, solves both machines, exports every graph)
+        shell: pwsh
+        run: |
+          $out = Join-Path $env:RUNNER_TEMP "selftest"
+          $p = Start-Process -FilePath "dist\AFPM-SHM-Designer.exe" -ArgumentList "--selftest","`"$out`"" -Wait -PassThru
+          Write-Host "exit code: $($p.ExitCode)"
+          if (Test-Path "$out\selftest_failed.txt") { Get-Content "$out\selftest_failed.txt" }
+          if ($p.ExitCode -ne 0 -or -not (Test-Path "$out\selftest_ok.txt")) { exit 1 }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: AFPM-SHM-Designer-windows
+          path: dist/AFPM-SHM-Designer.exe
+
+      - name: Attach to the GitHub release (only when you push a tag such as v1.0.0)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/AFPM-SHM-Designer.exe
