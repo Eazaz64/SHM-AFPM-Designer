@@ -90,7 +90,7 @@ class App:
     def __init__(self, root):
         self.root = root
         root.title("AFPM-BLDC SHM Designer %s" % __version__)
-        root.geometry("1280x800")
+        root.geometry("1500x860")
         root.minsize(1000, 640)
         self.vars = {}
         self.topology = tk.StringVar(value="SSSR")
@@ -99,7 +99,7 @@ class App:
         self.specs = []
         self.overlays = {}
         self.fig = Figure(figsize=(6.5, 4.5), dpi=100)
-        self.dfig = Figure(figsize=(4.2, 7.0), dpi=100)
+        self.dfig = Figure(figsize=(5.4, 9.0), dpi=100)
         self._draw_job = None
         self._build_menu()
         self._build_toolbar()
@@ -153,7 +153,7 @@ class App:
         pw.add(right, weight=1)
         pw.add(drawf, weight=0)
         self.dcanvas = FigureCanvasTkAgg(self.dfig, master=drawf)
-        self.dcanvas.get_tk_widget().configure(width=400)
+        self.dcanvas.get_tk_widget().configure(width=520)
         ttk.Button(drawf, text="Save drawing...", command=self.save_drawing).pack(side="bottom", pady=2)
         self.dcanvas.get_tk_widget().pack(side="top", fill="both", expand=True)
         # scrollable input form
